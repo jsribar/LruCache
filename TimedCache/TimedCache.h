@@ -4,13 +4,13 @@
 #include <memory>
 #include <algorithm>
 
-template<typename TItem, typename TData>
+template<typename TItem, typename TData, TItem(*Generator)(const TData&)>
 class TimedCache
 {
 	class TimestampedItem
 	{
 	public:
-		TimestampedItem(const TItem& item) : m_item(item)
+		TimestampedItem(const TData& data) : m_item(Generator(data))
 		{
 			GetSystemTimeAsFileTime(&m_time);
 		}
@@ -35,8 +35,7 @@ class TimedCache
 	using TItems = std::unordered_map<TData, TimestampedItem>;
 
 public:
-	template<typename TGenerator>
-	TItem GetItem(const TData& data, TGenerator gen)
+	TItem GetItem(const TData& data)
 	{
 		const TItems::iterator& found = items.find(data);
 		// item is found
@@ -45,7 +44,7 @@ public:
 			found->second.UpdateTimestamp();
 			return found->second.GetItem();
 		}
-		return items.emplace(data, gen(data)).first->second.GetItem();
+		return items.emplace(data, data).first->second.GetItem();
 	}
 
 private:

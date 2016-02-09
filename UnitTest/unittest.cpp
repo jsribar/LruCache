@@ -7,9 +7,9 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace UnitTest
 {		
-	double squared(int a)
+	int squared(const int& a)
 	{
-		return double(a * a);
+		return a * a;
 	}
 
 	TEST_CLASS(UnitTest1)
@@ -18,9 +18,9 @@ namespace UnitTest
 
 		TEST_METHOD(FetchingAnObjectThatIsNotInTheCacheAddsItToCache)
 		{
-			auto my_generator = [](int a) -> int { return a * a; };
-			TimedCache<int, int> tc;
-			Assert::AreEqual(9, tc.GetItem(3, squared));
+			auto my_generator = [](const int& a) -> int { return a * a; };
+			TimedCache<int, int, squared> tc;
+			Assert::AreEqual(9, tc.GetItem(3));
 		}
 
 	};

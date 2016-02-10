@@ -4,13 +4,14 @@
 #include <memory>
 #include <algorithm>
 
-template<typename TItem, typename TData, TItem(*Generator)(const TData&)>
+template<typename TItem, typename TData, typename TGenerator>
 class TimedCache
 {
+	
 	class TimestampedItem
 	{
 	public:
-		TimestampedItem(const TData& data) : m_item(Generator(data))
+		TimestampedItem(const TItem& item) : m_item(item)
 		{
 			GetSystemTimeAsFileTime(&m_time);
 		}
@@ -44,10 +45,16 @@ public:
 			found->second.UpdateTimestamp();
 			return found->second.GetItem();
 		}
-		return items.emplace(data, data).first->second.GetItem();
+		return items.emplace(data, generator(data)).first->second.GetItem();
+	}
+
+	bool ContainsItem(const TData& data)
+	{
+		return items.find(data) != items.end();
 	}
 
 private:
 
 	TItems items;
+	TGenerator generator;
 };

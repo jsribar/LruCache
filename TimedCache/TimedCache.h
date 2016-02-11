@@ -36,7 +36,7 @@ class TimedCache
 	using TItems = std::unordered_map<TData, TimestampedItem>;
 
 public:
-	TItem GetItem(const TData& data)
+	const TItem& GetItem(const TData& data)
 	{
 		const TItems::iterator& found = items.find(data);
 		// item is found

@@ -18,5 +18,8 @@
     <ClInclude Include="TimedCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TimedCacheLambda.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

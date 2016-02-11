@@ -26,10 +26,7 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TimedCacheTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="TimedCacheLambdaTest.cpp">
+    <ClCompile Include="DictionaryCacheTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

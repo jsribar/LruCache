@@ -5,7 +5,7 @@
 #include <memory>
 
 template<typename TItem, typename TData, typename TGenerator>
-class TimedCacheLambda
+class DictionaryCache
 {
 	class TimestampedItem
 	{
@@ -34,27 +34,33 @@ class TimedCacheLambda
 	using TItems = std::unordered_map<TData, TimestampedItem>;
 
 public:
-	TimedCacheLambda(const TGenerator& gen) : generator(gen)
+	DictionaryCache(const TGenerator& generator, int cleanupThreshold) : m_generator(generator), m_itemCleanupThreshold(cleanupThreshold)
 	{
 	}
 
 	bool ContainsItem(const TData& data)
 	{
-		return items.find(data) != items.end();
+		return m_items.find(data) != m_items.end();
 	}
 
 	const TItem& GetItem(const TData& data)
 	{
-		const TItems::iterator& found = items.find(data);
-		if (found != items.end())
+		const TItems::iterator& found = m_items.find(data);
+		if (found != m_items.end())
 		{
 			found->second.UpdateTimestamp();
 			return found->second.GetItem();
 		}
-		return items.emplace(data, generator(data)).first->second.GetItem();
+		return m_items.emplace(data, m_generator(data)).first->second.GetItem();
+	}
+
+	void Cleanup()
+	{
+
 	}
 
 private:
-	const TGenerator& generator;
-	TItems items;
+	const TGenerator& m_generator;
+	TItems m_items;
+	int m_itemCleanupThreshold;
 };

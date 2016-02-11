@@ -15,10 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="TimedCache.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TimedCacheLambda.h">
+    <ClInclude Include="DictionaryCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

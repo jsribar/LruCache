@@ -131,8 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="TimedCache.h" />
-    <ClInclude Include="TimedCacheLambda.h" />
+    <ClInclude Include="DictionaryCache.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

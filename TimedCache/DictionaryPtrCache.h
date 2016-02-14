@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <memory>
 
-template<typename TItem, typename TData, typename TGenerator>
+template<typename TItem, typename TData, typename TGenerator, typename TCompare = std::less<TData>, typename TDuration = std::chrono::milliseconds>
 class DictionaryPtrCache
 {
 	using steady_clock = std::chrono::steady_clock;
@@ -32,10 +32,14 @@ class DictionaryPtrCache
 		time_point m_lastAccessed;
 	};
 
-	using TItems = std::map<TData, TimestampedItem>;
+	using TItems = std::map<TData, TimestampedItem, TCompare>;
 
 public:
-	DictionaryPtrCache(const TGenerator& generator, int cleanupThreshold = 50, size_t maxLifetimeMs = 60000) : m_generator(generator), m_itemCleanupThreshold(cleanupThreshold), m_maxLifetime(maxLifetimeMs)
+	DictionaryPtrCache(const TGenerator& generator, int cleanupThreshold = 50, size_t maxLifetime = 60000) : m_items(TCompare()), m_generator(generator), m_itemCleanupThreshold(cleanupThreshold), m_maxLifetime(maxLifetime)
+	{
+	}
+
+	DictionaryPtrCache(const TGenerator& generator, const TCompare& compare, int cleanupThreshold = 50, size_t maxLifetime = 60000) : m_items(compare), m_generator(generator), m_itemCleanupThreshold(cleanupThreshold), m_maxLifetime(maxLifetime)
 	{
 	}
 
@@ -75,5 +79,5 @@ private:
 	const TGenerator& m_generator;
 	TItems m_items;
 	size_t m_itemCleanupThreshold;
-	std::chrono::milliseconds m_maxLifetime;
+	TDuration m_maxLifetime;
 };

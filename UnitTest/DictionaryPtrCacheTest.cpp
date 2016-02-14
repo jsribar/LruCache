@@ -9,7 +9,7 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace UnitTest
 {
-	int* NewSquare(const int& a)
+	int* NewSquare(int a)
 	{
 		return new int(a * a);
 	}
@@ -19,14 +19,9 @@ namespace UnitTest
 		struct MyStruct
 		{
 			static int counter;
-			MyStruct(int a)
-			{
-				++counter;
-			}
-			~MyStruct()
-			{
-				--counter;
-			}
+
+			MyStruct(int a) { ++counter; }
+			~MyStruct() { --counter; }
 		};
 
 	public:
@@ -34,7 +29,7 @@ namespace UnitTest
 		{
 			{
 				auto my_generator = [](const int& a) -> MyStruct* { return new MyStruct(a * a); };
-				DictionaryPtrCache<MyStruct, int, decltype(my_generator)> dc(my_generator, 0, 0);
+				DictionaryPtrCache<MyStruct, int, decltype(my_generator)> dc(my_generator, 0);
 				dc.GetItem(1);
 				dc.GetItem(2);
 				dc.GetItem(1);
@@ -46,14 +41,14 @@ namespace UnitTest
 		TEST_METHOD(DictionaryPtrCache_ContainsMethodReturnsFalseForItemNotInCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0, 0);
+			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0);
 			Assert::IsFalse(dc.ContainsItem(9));
 		}
 
 		TEST_METHOD(DictionaryPtrCache_FetchingAnObjectThatIsNotInTheCacheAddsItToCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int (a * a); };
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0, 0);
+			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0);
 			dc.GetItem(3);
 			Assert::IsTrue(dc.ContainsItem(3));
 		}
@@ -61,7 +56,7 @@ namespace UnitTest
 		TEST_METHOD(DictionaryPtrCache_FetchingAnObjectThatIsInTheCacheReturnsItsValue)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0, 0);
+			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0);
 			dc.GetItem(3);
 			Assert::AreEqual(*my_generator(3), *dc.GetItem(3));
 		}
@@ -69,7 +64,7 @@ namespace UnitTest
 		TEST_METHOD(DictionaryPtrCache_FetchingThreeDifferentObjectsThatAreNotInTheCacheAddsThemToCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0, 0);
+			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0);
 			dc.GetItem(1);
 			dc.GetItem(2);
 			dc.GetItem(3);
@@ -118,9 +113,26 @@ namespace UnitTest
 			Assert::IsFalse(dc.ContainsItem(2));
 		}
 
-		TEST_METHOD(DictionaryPtrCache_TestThatCacheWorksWithPointerToFunctions)
+		TEST_METHOD(DictionaryPtrCache_DefiningTDurationTemplateParameterInSecondsChangesTimeoutUnits)
 		{
-			DictionaryPtrCache<int, int, int*(const int&)> dc(*NewSquare, 0, 0);
+			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
+			int timeout = 2;
+			DictionaryPtrCache<int, int, decltype(my_generator), std::less<int>, std::chrono::seconds> dc(my_generator, 0, timeout);
+			dc.GetItem(1);
+			std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
+			dc.Cleanup();
+			Assert::IsTrue(dc.ContainsItem(1));
+
+			std::this_thread::sleep_for(std::chrono::seconds(timeout));
+			dc.GetItem(2);
+			dc.Cleanup();
+			Assert::IsFalse(dc.ContainsItem(1));
+			Assert::IsTrue(dc.ContainsItem(2));
+		}
+
+		TEST_METHOD(DictionaryPtrCache_CheckThatCacheWorksWithPointerToFunctions)
+		{
+			DictionaryPtrCache<int, int, int*(int)> dc(NewSquare, 0, 0);
 			dc.GetItem(3);
 			Assert::IsTrue(dc.ContainsItem(3));
 		}

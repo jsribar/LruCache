@@ -29,5 +29,8 @@
     <ClCompile Include="DictionaryCacheTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DictionaryPtrCacheTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

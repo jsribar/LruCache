@@ -6,7 +6,7 @@
 #include <memory>
 
 template<typename TItem, typename TData, typename TGenerator>
-class DictionaryCache
+class DictionaryPtrCache
 {
 	using steady_clock = std::chrono::steady_clock;
 	using time_point = std::chrono::steady_clock::time_point;
@@ -14,11 +14,11 @@ class DictionaryCache
 	class TimestampedItem
 	{
 	public:
-		TimestampedItem(const TItem& item) : m_item(item), m_lastAccessed(steady_clock::now())
+		TimestampedItem(TItem* item) : m_item(item), m_lastAccessed(steady_clock::now())
 		{
 		}
 
-		const TItem& GetItem() const { return m_item; }
+		TItem* GetItem() const { return m_item; }
 
 		const time_point& LastAccessed() const { return m_lastAccessed; }
 
@@ -28,14 +28,14 @@ class DictionaryCache
 		}
 
 	private:
-		TItem m_item;
+		TItem* m_item;
 		time_point m_lastAccessed;
 	};
 
-	using TItems = std::map<TData, TimestampedItem>;
+	using TItems = std::map<TData, std::unique_ptr<TimestampedItem>>;
 
 public:
-	DictionaryCache(const TGenerator& generator, int cleanupThreshold = 200, size_t maxLifetimeMs = 60000) : m_generator(generator), m_itemCleanupThreshold(cleanupThreshold), m_maxLifetime(maxLifetimeMs)
+	DictionaryPtrCache(const TGenerator& generator, int cleanupThreshold = 200, size_t maxLifetimeMs = 60000) : m_generator(generator), m_itemCleanupThreshold(cleanupThreshold), m_maxLifetime(maxLifetimeMs)
 	{
 	}
 
@@ -44,15 +44,15 @@ public:
 		return m_items.find(data) != m_items.end();
 	}
 
-	const TItem& GetItem(const TData& data)
+	TItem* GetItem(const TData& data)
 	{
 		const TItems::iterator& found = m_items.find(data);
 		if (found != m_items.end())
 		{
-			found->second.UpdateTimestamp();
-			return found->second.GetItem();
+			found->second->UpdateTimestamp();
+			return found->second->GetItem();
 		}
-		return m_items.emplace(data, m_generator(data)).first->second.GetItem();
+		return m_items.insert(std::pair<TData, std::unique_ptr<TimestampedItem>>(data, std::make_unique<TimestampedItem>(m_generator(data)))).first->second->GetItem();
 	}
 
 	void Cleanup()
@@ -64,7 +64,7 @@ public:
 		// fetch all keys for which lifetime has expired
 		for (auto it = m_items.begin(); it != m_items.end(); )
 		{
-			if (it->second.LastAccessed() < timeStampLimit)
+			if (it->second->LastAccessed() < timeStampLimit)
 				it = m_items.erase(it);
 			else
 				++it;

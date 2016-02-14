@@ -3,18 +3,15 @@
 #include <thread>
 #include <iostream>
 
-#include "..\TimedCache\DictionaryPtrCache.h"
+#include "..\TimedCache\DictionaryPtrCacheUnorderedMap.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace UnitTest
 {
-	int* NewSquare(int a)
-	{
-		return new int(a * a);
-	}
+	extern int* NewSquare(int a);
 
-	TEST_CLASS(DictionaryPtrCacheTest)
+	TEST_CLASS(DictionaryPtrCacheUnorderedMapTest)
 	{
 		struct MyStruct
 		{
@@ -25,11 +22,11 @@ namespace UnitTest
 		};
 
 	public:
-		TEST_METHOD(DictionaryPtrCache_VerifyAllInstancesAreDeletedWhenCacheGoesOutOfScope)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_VerifyAllInstancesAreDeletedWhenCacheGoesOutOfScope)
 		{
 			{
 				auto my_generator = [](const int& a) -> MyStruct* { return new MyStruct(a * a); };
-				DictionaryPtrCache<MyStruct, int, decltype(my_generator)> dc(my_generator, 0);
+				DictionaryPtrCacheUnorderedMap<MyStruct, int, decltype(my_generator)> dc(my_generator, 0);
 				dc.GetItem(1);
 				dc.GetItem(2);
 				dc.GetItem(1);
@@ -38,33 +35,33 @@ namespace UnitTest
 			Assert::AreEqual(0, MyStruct::counter);
 		}
 
-		TEST_METHOD(DictionaryPtrCache_ContainsMethodReturnsFalseForItemNotInCache)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_ContainsMethodReturnsFalseForItemNotInCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0);
+			DictionaryPtrCacheUnorderedMap<int, int, decltype(my_generator)> dc(my_generator, 0);
 			Assert::IsFalse(dc.ContainsItem(9));
 		}
 
-		TEST_METHOD(DictionaryPtrCache_FetchingAnObjectThatIsNotInTheCacheAddsItToCache)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_FetchingAnObjectThatIsNotInTheCacheAddsItToCache)
 		{
-			auto my_generator = [](const int& a) -> int* { return new int (a * a); };
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0);
+			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
+			DictionaryPtrCacheUnorderedMap<int, int, decltype(my_generator)> dc(my_generator, 0);
 			dc.GetItem(3);
 			Assert::IsTrue(dc.ContainsItem(3));
 		}
 
-		TEST_METHOD(DictionaryPtrCache_FetchingAnObjectThatIsInTheCacheReturnsItsValue)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_FetchingAnObjectThatIsInTheCacheReturnsItsValue)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0);
+			DictionaryPtrCacheUnorderedMap<int, int, decltype(my_generator)> dc(my_generator, 0);
 			dc.GetItem(3);
 			Assert::AreEqual(*my_generator(3), *dc.GetItem(3));
 		}
 
-		TEST_METHOD(DictionaryPtrCache_FetchingThreeDifferentObjectsThatAreNotInTheCacheAddsThemToCache)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_FetchingThreeDifferentObjectsThatAreNotInTheCacheAddsThemToCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0);
+			DictionaryPtrCacheUnorderedMap<int, int, decltype(my_generator)> dc(my_generator, 0);
 			dc.GetItem(1);
 			dc.GetItem(2);
 			dc.GetItem(3);
@@ -73,11 +70,11 @@ namespace UnitTest
 			Assert::IsTrue(dc.ContainsItem(3));
 		}
 
-		TEST_METHOD(DictionaryPtrCache_CleanupMethodRemovesItemsOlderThanTimeoutPeriod)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_CleanupMethodRemovesItemsOlderThanTimeoutPeriod)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
 			int timeout = 500;
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0, timeout);
+			DictionaryPtrCacheUnorderedMap<int, int, decltype(my_generator)> dc(my_generator, 0, timeout);
 			dc.GetItem(1);
 			std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
 			dc.GetItem(2);
@@ -86,11 +83,11 @@ namespace UnitTest
 			Assert::IsTrue(dc.ContainsItem(2));
 		}
 
-		TEST_METHOD(DictionaryPtrCache_CleanupMethodDoesNotRemoveItemIfLastGetItemWasCalledWithinTimeoutPeriod)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_CleanupMethodDoesNotRemoveItemIfLastGetItemWasCalledWithinTimeoutPeriod)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
 			int timeout = 500;
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0, timeout);
+			DictionaryPtrCacheUnorderedMap<int, int, decltype(my_generator)> dc(my_generator, 0, timeout);
 			dc.GetItem(1);
 			dc.GetItem(2);
 			std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
@@ -100,11 +97,11 @@ namespace UnitTest
 			Assert::IsFalse(dc.ContainsItem(2));
 		}
 
-		TEST_METHOD(DictionaryPtrCache_CleanupMethodRemoveaAllItemsIfTheyAreExpired)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_CleanupMethodRemoveaAllItemsIfTheyAreExpired)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
 			int timeout = 500;
-			DictionaryPtrCache<int, int, decltype(my_generator)> dc(my_generator, 0, timeout);
+			DictionaryPtrCacheUnorderedMap<int, int, decltype(my_generator)> dc(my_generator, 0, timeout);
 			dc.GetItem(1);
 			dc.GetItem(2);
 			std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
@@ -113,11 +110,11 @@ namespace UnitTest
 			Assert::IsFalse(dc.ContainsItem(2));
 		}
 
-		TEST_METHOD(DictionaryPtrCache_DefiningTDurationTemplateParameterInSecondsChangesTimeoutUnits)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_DefiningTDurationTemplateParameterInSecondsChangesTimeoutUnits)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
 			int timeout = 2;
-			DictionaryPtrCache<int, int, decltype(my_generator), std::chrono::seconds> dc(my_generator, 0, timeout);
+			DictionaryPtrCacheUnorderedMap<int, int, decltype(my_generator), std::chrono::seconds> dc(my_generator, 0, timeout);
 			dc.GetItem(1);
 			std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
 			dc.Cleanup();
@@ -130,13 +127,13 @@ namespace UnitTest
 			Assert::IsTrue(dc.ContainsItem(2));
 		}
 
-		TEST_METHOD(DictionaryPtrCache_CheckThatCacheWorksWithPointerToFunctions)
+		TEST_METHOD(DictionaryPtrCacheUnorderedMap_CheckThatCacheWorksWithPointerToFunctions)
 		{
-			DictionaryPtrCache<int, int, int*(int)> dc(NewSquare, 0, 0);
+			DictionaryPtrCacheUnorderedMap<int, int, int*(int)> dc(NewSquare, 0, 0);
 			dc.GetItem(3);
 			Assert::IsTrue(dc.ContainsItem(3));
 		}
 	};
 
-	int DictionaryPtrCacheTest::MyStruct::counter = 0;
+	int DictionaryPtrCacheUnorderedMapTest::MyStruct::counter = 0;
 }

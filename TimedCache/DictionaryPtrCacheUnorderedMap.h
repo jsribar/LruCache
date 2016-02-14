@@ -1,12 +1,12 @@
 #pragma once
 #include <chrono> 
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <algorithm>
 #include <memory>
 
 template<typename TItem, typename TData, typename TGenerator, typename TDuration = std::chrono::milliseconds>
-class DictionaryPtrCache
+class DictionaryPtrCacheUnorderedMap
 {
 	using steady_clock = std::chrono::steady_clock;
 	using time_point = std::chrono::steady_clock::time_point;
@@ -32,10 +32,10 @@ class DictionaryPtrCache
 		time_point m_lastAccessed;
 	};
 
-	using TItems = std::map<TData, TimestampedItem>;
+	using TItems = std::unordered_map<TData, TimestampedItem>;
 
 public:
-	DictionaryPtrCache(const TGenerator& generator, int cleanupThreshold = 50, size_t maxLifetime = 60000) 
+	DictionaryPtrCacheUnorderedMap(const TGenerator& generator, int cleanupThreshold = 50, size_t maxLifetime = 60000) 
 		: m_generator(generator)
 		, m_itemCleanupThreshold(cleanupThreshold)
 		, m_maxLifetime(maxLifetime)
@@ -80,3 +80,4 @@ private:
 	size_t m_itemCleanupThreshold;
 	TDuration m_maxLifetime;
 };
+

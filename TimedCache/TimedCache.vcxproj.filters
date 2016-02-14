@@ -21,5 +21,8 @@
     <ClInclude Include="DictionaryPtrCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="DictionaryPtrCacheUnorderedMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -32,5 +32,8 @@
     <ClCompile Include="DictionaryPtrCacheTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="DictionaryPtrCacheUnorderedMapTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

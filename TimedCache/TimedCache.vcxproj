@@ -133,6 +133,7 @@
   <ItemGroup>
     <ClInclude Include="DictionaryCache.h" />
     <ClInclude Include="DictionaryPtrCache.h" />
+    <ClInclude Include="DictionaryPtrCacheUnorderedMap.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

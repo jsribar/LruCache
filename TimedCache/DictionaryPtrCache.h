@@ -18,7 +18,7 @@ class DictionaryPtrCache
 		{
 		}
 
-		TItem* GetItem() const { return m_item; }
+		TItem* GetItem() const { return m_item.get(); }
 
 		const time_point& LastAccessed() const { return m_lastAccessed; }
 
@@ -28,14 +28,14 @@ class DictionaryPtrCache
 		}
 
 	private:
-		TItem* m_item;
+		std::unique_ptr<TItem> m_item;
 		time_point m_lastAccessed;
 	};
 
-	using TItems = std::map<TData, std::unique_ptr<TimestampedItem>>;
+	using TItems = std::map<TData, TimestampedItem>;
 
 public:
-	DictionaryPtrCache(const TGenerator& generator, int cleanupThreshold = 200, size_t maxLifetimeMs = 60000) : m_generator(generator), m_itemCleanupThreshold(cleanupThreshold), m_maxLifetime(maxLifetimeMs)
+	DictionaryPtrCache(const TGenerator& generator, int cleanupThreshold = 50, size_t maxLifetimeMs = 60000) : m_generator(generator), m_itemCleanupThreshold(cleanupThreshold), m_maxLifetime(maxLifetimeMs)
 	{
 	}
 
@@ -49,10 +49,10 @@ public:
 		const TItems::iterator& found = m_items.find(data);
 		if (found != m_items.end())
 		{
-			found->second->UpdateTimestamp();
-			return found->second->GetItem();
+			found->second.UpdateTimestamp();
+			return found->second.GetItem();
 		}
-		return m_items.insert(std::pair<TData, std::unique_ptr<TimestampedItem>>(data, std::make_unique<TimestampedItem>(m_generator(data)))).first->second->GetItem();
+		return m_items.emplace(data, TimestampedItem(m_generator(data))).first->second.GetItem();
 	}
 
 	void Cleanup()
@@ -64,7 +64,7 @@ public:
 		// fetch all keys for which lifetime has expired
 		for (auto it = m_items.begin(); it != m_items.end(); )
 		{
-			if (it->second->LastAccessed() < timeStampLimit)
+			if (it->second.LastAccessed() < timeStampLimit)
 				it = m_items.erase(it);
 			else
 				++it;

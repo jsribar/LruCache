@@ -132,8 +132,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="LruCache.h" />
-    <ClInclude Include="LruCache1.h" />
-    <ClInclude Include="LruPtrCache.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

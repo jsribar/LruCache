@@ -26,13 +26,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DictionaryCacheTest.cpp">
+    <ClCompile Include="LruPtrCacheTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DictionaryPtrCacheTest.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DictionaryPtrCacheUnorderedMapTest.cpp">
+    <ClCompile Include="LruCacheTest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

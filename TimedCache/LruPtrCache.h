@@ -6,7 +6,7 @@
 #include <memory>
 
 template<typename TItem, typename TData, typename TGenerator, typename TDuration = std::chrono::milliseconds>
-class DictionaryPtrCacheUnorderedMap
+class LruPtrCache
 {
 	using steady_clock = std::chrono::steady_clock;
 	using time_point = std::chrono::steady_clock::time_point;
@@ -35,10 +35,16 @@ class DictionaryPtrCacheUnorderedMap
 	using TItems = std::unordered_map<TData, TimestampedItem>;
 
 public:
-	DictionaryPtrCacheUnorderedMap(const TGenerator& generator, int cleanupThreshold = 50, size_t maxLifetime = 60000) 
+	// generator - functor that creates item pointer for the key value provided
+	// cleanupThreshold - number of items in cache above which cache is cleaned-up
+	// maxLifetime - maximum lifetime (in ms) of item in the cache, measured from time item was accessed last
+	// cleanUpPeriod - minimum period (in ms) between two periodic clean-ups
+	LruPtrCache(const TGenerator& generator, int cleanupThreshold, size_t maxLifetime, size_t cleanUpPeriod) 
 		: m_generator(generator)
-		, m_itemCleanupThreshold(cleanupThreshold)
+		, m_itemsCleanupThreshold(cleanupThreshold)
 		, m_maxLifetime(maxLifetime)
+		, m_cleanUpPeriod(cleanUpPeriod)
+		, m_nextCleanupTime(steady_clock::now() + m_cleanUpPeriod)
 	{
 	}
 
@@ -53,21 +59,19 @@ public:
 		if (found != m_items.end())
 		{
 			found->second.UpdateTimestamp();
+			if (m_items.size() > 1)
+				RemoveExpiredItems();
 			return found->second.GetItem();
 		}
-		return m_items.emplace(data, TimestampedItem(m_generator(data))).first->second.GetItem();
+		RemoveExpiredItems();
+		return m_items.emplace(data, m_generator(data)).first->second.GetItem();
 	}
 
-	void Cleanup()
+	void Cleanup(time_point lifetimeThreshold)
 	{
-		if (m_items.size() < m_itemCleanupThreshold)
-			return;
-		// find boundary timestamp for the m_maxLifetime
-		time_point timeStampLimit = steady_clock::now() - m_maxLifetime;
-		// fetch all keys for which lifetime has expired
 		for (auto it = m_items.begin(); it != m_items.end(); )
 		{
-			if (it->second.LastAccessed() < timeStampLimit)
+			if (it->second.LastAccessed() < lifetimeThreshold)
 				it = m_items.erase(it);
 			else
 				++it;
@@ -77,7 +81,21 @@ public:
 private:
 	const TGenerator& m_generator;
 	TItems m_items;
-	size_t m_itemCleanupThreshold;
+	size_t m_itemsCleanupThreshold;
 	TDuration m_maxLifetime;
+	TDuration m_cleanUpPeriod;
+	time_point m_nextCleanupTime;
+
+	void RemoveExpiredItems()
+	{
+		if (m_items.size() < m_itemsCleanupThreshold)
+			return;
+		if (steady_clock::now() > m_nextCleanupTime)
+		{
+			// erase all items for which lifetime has expired
+			Cleanup(steady_clock::now() - m_maxLifetime);
+			m_nextCleanupTime = steady_clock::now() + m_cleanUpPeriod;
+		}
+	}
 };
 

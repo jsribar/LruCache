@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <memory>
 
-template<typename TItem, typename TData, typename TGenerator, typename TDuration = std::chrono::milliseconds>
+template<typename TItem, typename TKey, typename TGenerator, typename TDuration = std::chrono::milliseconds>
 class LruCache
 {
 	using steady_clock = std::chrono::steady_clock;
@@ -32,7 +32,7 @@ class LruCache
 		time_point m_lastAccessed;
 	};
 
-	using TItems = std::unordered_map<TData, TimestampedItem>;
+	using TItems = std::unordered_map<TKey, TimestampedItem>;
 
 public:
 	// generator - functor that creates item pointer for the key value provided
@@ -48,12 +48,12 @@ public:
 	{
 	}
 
-	bool ContainsItem(const TData& data)
+	bool ContainsItem(const TKey& data)
 	{
 		return m_items.find(data) != m_items.end();
 	}
 
-	const TItem& GetItem(const TData& data)
+	const TItem& GetItem(const TKey& data)
 	{
 		const TItems::iterator& found = m_items.find(data);
 		if (found != m_items.end())

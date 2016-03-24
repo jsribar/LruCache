@@ -1,76 +1,46 @@
 #pragma once
-#include <chrono> 
 #include <unordered_map>
-#include <vector>
+#include <deque>
 #include <algorithm>
 #include <memory>
+#include <cassert>
 
-using steady_clock = std::chrono::steady_clock;
-using time_point = std::chrono::steady_clock::time_point;
-
-template<typename TItem, typename TKey, typename TGenerator, typename TDuration = std::chrono::milliseconds, typename TGetItem = const TItem&>
+template<typename TItem, typename TKey, typename TGenerator, typename TItemInternal = TItem, typename TGetItem = const TItem&>
 class LruCacheBase
 {
-	template<typename TItem>
-	class TimestampedItem
-	{
-	public:
-		TimestampedItem(const TItem& item) : m_item(item), m_lastAccessed(steady_clock::now())
-		{
-		}
+protected:
+	using TItems = std::unordered_map<TKey, TItemInternal>;
+	using TIterator = typename TItems::iterator;
+	using TKeyIterators = std::deque<TIterator>;
 
-		const TItem& GetItem() const { return m_item; }
+	//template<typename TItem, typename TIterator>
+	//struct ItemGetter
+	//{
+	//	const TItem& operator() (const TIterator& iter)
+	//	{
+	//		return iter->second;
+	//	}
+	//};
 
-		const time_point& LastAccessed() const { return m_lastAccessed; }
+	//template<typename TItem, typename TIterator>
+	//struct ItemGetter<TItem*, TIterator>
+	//{
+	//	TItem* operator() (const TIterator& iter)
+	//	{
+	//		return iter->second.get();
+	//	}
+	//};
 
-		void UpdateTimestamp()
-		{
-			m_lastAccessed = steady_clock::now();
-		}
-
-	private:
-		TItem m_item;
-		time_point m_lastAccessed;
-	};
-
-	template<typename TItem>
-	class TimestampedItem<TItem*>
-	{
-	public:
-		TimestampedItem(TItem* item) : m_item(item), m_lastAccessed(steady_clock::now())
-		{
-		}
-
-		TItem* GetItem() const { return m_item.get(); }
-
-		const time_point& LastAccessed() const { return m_lastAccessed; }
-
-		void UpdateTimestamp()
-		{
-			m_lastAccessed = steady_clock::now();
-		}
-
-	private:
-		std::unique_ptr<TItem> m_item;
-		time_point m_lastAccessed;
-	};
-
-	using TItems = std::unordered_map<TKey, TimestampedItem<TItem>>;
-
-public:
+protected:
 	// generator - functor that creates item pointer for the key value provided
-	// cleanupThreshold - number of items in cache above which cache is cleaned-up
-	// maxLifetime - maximum lifetime (in ms) of item in the cache, measured from time item was accessed last
-	// cleanUpPeriod - minimum period (in ms) between two periodic clean-ups
-	LruCacheBase(const TGenerator& generator, int cleanupThreshold, size_t maxLifetime, size_t cleanUpPeriod)
+	// capacity - maximum number of items in the cache
+	LruCacheBase(TGenerator& generator, size_t capacity)
 		: m_generator(generator)
-		, m_itemsCleanupThreshold(cleanupThreshold)
-		, m_maxLifetime(maxLifetime)
-		, m_cleanUpPeriod(cleanUpPeriod)
-		, m_nextCleanupTime(steady_clock::now() + m_cleanUpPeriod)
+		, m_capacity(capacity)
 	{
 	}
 
+public:
 	bool ContainsItem(const TKey& key)
 	{
 		return m_items.find(key) != m_items.end();
@@ -78,65 +48,64 @@ public:
 
 	TGetItem GetItem(const TKey& key)
 	{
-		const TItems::iterator& found = m_items.find(key);
+		const TIterator& found = m_items.find(key);
 		if (found != m_items.end())
 		{
-			found->second.UpdateTimestamp();
-			if (m_items.size() > 1)
-				RemoveExpiredItems();
-			return found->second.GetItem();
+			RepositionToQueueEnd(found);
+			return found->second;
 		}
-		RemoveExpiredItems();
-		return m_items.emplace(key, m_generator(key)).first->second.GetItem();
+		Strip();
+		return AddItem(key);
 	}
 
-	void Cleanup(time_point lifetimeThreshold)
-	{
-		for (auto it = m_items.begin(); it != m_items.end(); )
-		{
-			if (it->second.LastAccessed() < lifetimeThreshold)
-				it = m_items.erase(it);
-			else
-				++it;
-		}
-	}
-
-private:
-	const TGenerator& m_generator;
+protected:
+	TGenerator& m_generator;
+	size_t m_capacity;
 	TItems m_items;
-	size_t m_itemsCleanupThreshold;
-	TDuration m_maxLifetime;
-	TDuration m_cleanUpPeriod;
-	time_point m_nextCleanupTime;
+	TKeyIterators m_keyIterators;
+	//ItemGetter<TItem, TIterator> m_itemGetter;
 
-
-	void RemoveExpiredItems()
+	TGetItem AddItem(const TKey& key)
 	{
-		if (m_items.size() < m_itemsCleanupThreshold)
+		assert(m_items.find(key) == m_items.end());
+		auto iter = m_items.emplace(key, m_generator(key)).first;
+		m_keyIterators.push_back(iter);
+		assert(m_items.size() == m_keyIterators.size());
+		return iter->second;
+	}
+
+	void Strip()
+	{
+		if (m_items.size() < m_capacity)
 			return;
-		if (steady_clock::now() > m_nextCleanupTime)
-		{
-			// erase all items for which lifetime has expired
-			Cleanup(steady_clock::now() - m_maxLifetime);
-			m_nextCleanupTime = steady_clock::now() + m_cleanUpPeriod;
-		}
+		auto iter = m_keyIterators.front();
+		m_items.erase(iter);
+		m_keyIterators.pop_front();
+		assert(m_items.size() == m_keyIterators.size());
+	}
+
+	void RepositionToQueueEnd(const TIterator& iter)
+	{
+		auto found = std::find(m_keyIterators.begin(), m_keyIterators.end(), iter);
+		std::rotate(found, found + 1, m_keyIterators.end());
 	}
 };
 
-template<typename TItem, typename TKey, typename TGenerator, typename TDuration = std::chrono::milliseconds>
-class LruCache : public LruCacheBase<TItem, TKey, TGenerator, TDuration>
+template<typename TItem, typename TKey, typename TGenerator>
+class LruCache : public LruCacheBase<TItem, TKey, TGenerator>
 {
 public:
-	LruCache(const TGenerator& generator, int cleanupThreshold, size_t maxLifetime, size_t cleanUpPeriod)
-		: LruCacheBase(generator, cleanupThreshold, maxLifetime, cleanUpPeriod)
+	LruCache(TGenerator& generator, size_t capacity)
+		: LruCacheBase(generator, capacity)
 	{}
+
 };
 
-template<typename TItem, typename TKey, typename TGenerator, typename TDuration>
-class LruCache<TItem*, TKey, TGenerator, TDuration> : public LruCacheBase<TItem*, TKey, TGenerator, TDuration, TItem*>
+template<typename TItem, typename TKey, typename TGenerator>
+class LruCache<TItem*, TKey, TGenerator> : public LruCacheBase<TItem*, TKey, TGenerator, std::unique_ptr<TItem>, TItem*>
 {
 public:
-	LruCache(const TGenerator& generator, int cleanupThreshold, size_t maxLifetime, size_t cleanUpPeriod)
-		: LruCacheBase(generator, cleanupThreshold, maxLifetime, cleanUpPeriod)
+	LruCache(TGenerator& generator, size_t capacity)
+		: LruCacheBase(generator, capacity)
 	{}
 };

@@ -30,7 +30,7 @@ namespace UnitTest
 			{
 				auto my_generator = [](const int& a) -> MyStruct* { return new MyStruct(a * a); };
 				int a = 5;
-				LruCache<MyStruct*, int, decltype(my_generator)> cache{ my_generator, 0, 60000, 20000 };
+				LruCache<MyStruct*, int, decltype(my_generator)> cache{ my_generator, 5 };
 				cache.GetItem(1);
 				cache.GetItem(2);
 				cache.GetItem(1);
@@ -42,14 +42,14 @@ namespace UnitTest
 		TEST_METHOD(LruPtrCache_ContainsItemMethodReturnsFalseForEmptyCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 0, 60000, 20000 };
+			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 5 };
 			Assert::IsFalse(cache.ContainsItem(9));
 		}
 
 		TEST_METHOD(LruPtrCache_GetItemMethodForObjectThatIsNotInTheCacheAddsItToCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 0, 60000, 20000 };
+			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 5 };
 			cache.GetItem(3);
 			Assert::IsTrue(cache.ContainsItem(3));
 		}
@@ -57,14 +57,14 @@ namespace UnitTest
 		TEST_METHOD(LruPtrCache_GetItemMethodReturnsItsValueIfItemWasNotInCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 0, 60000, 20000 };
+			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 5 };
 			Assert::AreEqual(*my_generator(3), *cache.GetItem(3));
 		}
 
 		TEST_METHOD(LruPtrCache_GetItemMethodReturnsItsValueIfItemIsAlreadyInCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 0, 60000, 20000 };
+			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 5 };
 			cache.GetItem(3);
 			Assert::AreEqual(*my_generator(3), *cache.GetItem(3));
 		}
@@ -72,7 +72,7 @@ namespace UnitTest
 		TEST_METHOD(LruPtrCache_GetItemForThreeDifferentObjectsThatAreNotInTheCacheAddsThemToCache)
 		{
 			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 0, 60000, 20000 };
+			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 5 };
 			cache.GetItem(1);
 			cache.GetItem(2);
 			cache.GetItem(3);
@@ -81,65 +81,65 @@ namespace UnitTest
 			Assert::IsTrue(cache.ContainsItem(3));
 		}
 
-		TEST_METHOD(LruCache_CleanupMethodRemovesItemIfItHasExpired)
-		{
-			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			size_t timeout = 10;
-			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 0, timeout, 20000 };
-			cache.GetItem(1);
-			std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
-			Assert::IsTrue(cache.ContainsItem(1));
-			cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::milliseconds(timeout));
-			Assert::IsFalse(cache.ContainsItem(1));
-		}
+		//TEST_METHOD(LruCache_CleanupMethodRemovesItemIfItHasExpired)
+		//{
+		//	auto my_generator = [](const int& a) -> int* { return new int(a * a); };
+		//	size_t timeout = 10;
+		//	LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 5 };
+		//	cache.GetItem(1);
+		//	std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
+		//	Assert::IsTrue(cache.ContainsItem(1));
+		//	cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::milliseconds(timeout));
+		//	Assert::IsFalse(cache.ContainsItem(1));
+		//}
 
-		TEST_METHOD(LruPtrCache_CleanupMethodDoesNotRemoveItemIfLastGetItemWasCalledWithinTimeoutPeriod)
-		{
-			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			size_t timeout = 10;
-			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 0, timeout, 20000 };
-			cache.GetItem(1);
-			cache.GetItem(2);
-			std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
-			cache.GetItem(1);
-			cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::milliseconds(timeout));
-			Assert::IsTrue(cache.ContainsItem(1));
-			Assert::IsFalse(cache.ContainsItem(2));
-		}
+		//TEST_METHOD(LruPtrCache_CleanupMethodDoesNotRemoveItemIfLastGetItemWasCalledWithinTimeoutPeriod)
+		//{
+		//	auto my_generator = [](const int& a) -> int* { return new int(a * a); };
+		//	size_t timeout = 10;
+		//	LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 5 };
+		//	cache.GetItem(1);
+		//	cache.GetItem(2);
+		//	std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
+		//	cache.GetItem(1);
+		//	cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::milliseconds(timeout));
+		//	Assert::IsTrue(cache.ContainsItem(1));
+		//	Assert::IsFalse(cache.ContainsItem(2));
+		//}
 
-		TEST_METHOD(LruPtrCache_CleanupMethodRemovesAllItemsThatHaveExpired)
-		{
-			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			size_t timeout = 10;
-			LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 0, timeout, 20000 };
-			cache.GetItem(1);
-			cache.GetItem(2);
-			std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
-			cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::milliseconds(timeout));
-			Assert::IsFalse(cache.ContainsItem(1));
-			Assert::IsFalse(cache.ContainsItem(2));
-		}
+		//TEST_METHOD(LruPtrCache_CleanupMethodRemovesAllItemsThatHaveExpired)
+		//{
+		//	auto my_generator = [](const int& a) -> int* { return new int(a * a); };
+		//	size_t timeout = 10;
+		//	LruCache<int*, int, decltype(my_generator)> cache{ my_generator, 5 };
+		//	cache.GetItem(1);
+		//	cache.GetItem(2);
+		//	std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
+		//	cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::milliseconds(timeout));
+		//	Assert::IsFalse(cache.ContainsItem(1));
+		//	Assert::IsFalse(cache.ContainsItem(2));
+		//}
 
-		TEST_METHOD(LruPtrCache_DefiningTDurationTemplateParameterInSecondsChangesTimeoutUnits)
-		{
-			auto my_generator = [](const int& a) -> int* { return new int(a * a); };
-			size_t timeout = 2;
-			LruCache<int*, int, decltype(my_generator), std::chrono::seconds> cache{ my_generator, 0, timeout, 20000 };
-			cache.GetItem(1);
-			std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
-			cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::seconds(timeout));
-			Assert::IsTrue(cache.ContainsItem(1));
+		//TEST_METHOD(LruPtrCache_DefiningTDurationTemplateParameterInSecondsChangesTimeoutUnits)
+		//{
+		//	auto my_generator = [](const int& a) -> int* { return new int(a * a); };
+		//	size_t timeout = 2;
+		//	LruCache<int*, int, decltype(my_generator), std::chrono::seconds> cache{ my_generator, 0, timeout, 20000 };
+		//	cache.GetItem(1);
+		//	std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
+		//	cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::seconds(timeout));
+		//	Assert::IsTrue(cache.ContainsItem(1));
 
-			std::this_thread::sleep_for(std::chrono::seconds(timeout));
-			cache.GetItem(2);
-			cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::seconds(timeout));
-			Assert::IsFalse(cache.ContainsItem(1));
-			Assert::IsTrue(cache.ContainsItem(2));
-		}
+		//	std::this_thread::sleep_for(std::chrono::seconds(timeout));
+		//	cache.GetItem(2);
+		//	cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::seconds(timeout));
+		//	Assert::IsFalse(cache.ContainsItem(1));
+		//	Assert::IsTrue(cache.ContainsItem(2));
+		//}
 
 		TEST_METHOD(LruPtrCache_CheckThatCacheWorksWithPointerToFunctions)
 		{
-			LruCache<int*, int, int*(int)> cache{ NewSquare, 0, 0, 0 };
+			LruCache<int*, int, int*(int)> cache{ NewSquare, 5 };
 			cache.GetItem(3);
 			Assert::IsTrue(cache.ContainsItem(3));
 		}

@@ -5,31 +5,34 @@
 #include <memory>
 #include <cassert>
 
-template<typename TItem, typename TKey, typename TGenerator, typename TItemInternal = TItem, typename TGetItem = const TItem&>
+template<typename TItem, typename TKey, typename TGenerator, typename TGetItem = const TItem&>
 class LruCacheBase
 {
-protected:
-	using TItems = std::unordered_map<TKey, TItemInternal>;
+	// item stored in the cache
+	template<typename TItem>
+	class Item
+	{
+	public:
+		Item(const TItem& item) : m_item(item) {}
+		const TItem& GetItem() const { return m_item; }
+	private:
+		TItem m_item;
+	};
+
+	// specialization for pointer items
+	template<typename TItem>
+	class Item<TItem*>
+	{
+	public:
+		Item(TItem* item) : m_item(item) {}
+		TItem* GetItem() const { return m_item.get(); }
+	private:
+		std::unique_ptr<TItem> m_item;
+	};
+
+	using TItems = std::unordered_map<TKey, Item<TItem>>;
 	using TIterator = typename TItems::iterator;
 	using TKeyIterators = std::deque<TIterator>;
-
-	//template<typename TItem, typename TIterator>
-	//struct ItemGetter
-	//{
-	//	const TItem& operator() (const TIterator& iter)
-	//	{
-	//		return iter->second;
-	//	}
-	//};
-
-	//template<typename TItem, typename TIterator>
-	//struct ItemGetter<TItem*, TIterator>
-	//{
-	//	TItem* operator() (const TIterator& iter)
-	//	{
-	//		return iter->second.get();
-	//	}
-	//};
 
 protected:
 	// generator - functor that creates item pointer for the key value provided
@@ -52,32 +55,37 @@ public:
 		if (found != m_items.end())
 		{
 			RepositionToQueueEnd(found);
-			return found->second;
+			return found->second.GetItem();
 		}
-		Strip();
+		if (m_items.size() >= m_capacity)
+			StripOldest();
 		return AddItem(key);
 	}
 
-protected:
+	void Resize(size_t newSize)
+	{
+		while (m_items.size() > newSize)
+			StripOldest();
+		m_capacity = newSize;
+	}
+
+private:
 	TGenerator& m_generator;
 	size_t m_capacity;
 	TItems m_items;
 	TKeyIterators m_keyIterators;
-	//ItemGetter<TItem, TIterator> m_itemGetter;
 
-	TGetItem AddItem(const TKey& key)
+	TGetItem AddItem(TKey key)
 	{
 		assert(m_items.find(key) == m_items.end());
-		auto iter = m_items.emplace(key, m_generator(key)).first;
+		const auto& iter = m_items.emplace(key, m_generator(key)).first;
 		m_keyIterators.push_back(iter);
 		assert(m_items.size() == m_keyIterators.size());
-		return iter->second;
+		return iter->second.GetItem();
 	}
 
-	void Strip()
+	void StripOldest()
 	{
-		if (m_items.size() < m_capacity)
-			return;
 		auto iter = m_keyIterators.front();
 		m_items.erase(iter);
 		m_keyIterators.pop_front();
@@ -98,11 +106,10 @@ public:
 	LruCache(TGenerator& generator, size_t capacity)
 		: LruCacheBase(generator, capacity)
 	{}
-
 };
 
 template<typename TItem, typename TKey, typename TGenerator>
-class LruCache<TItem*, TKey, TGenerator> : public LruCacheBase<TItem*, TKey, TGenerator, std::unique_ptr<TItem>, TItem*>
+class LruCache<TItem*, TKey, TGenerator> : public LruCacheBase<TItem*, TKey, TGenerator, TItem*>
 {
 public:
 	LruCache(TGenerator& generator, size_t capacity)

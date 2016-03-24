@@ -158,8 +158,8 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="LruCache1Test.cpp" />
-    <ClCompile Include="LruPtrCache1Test.cpp" />
+    <ClCompile Include="TestLruCache.cpp" />
+    <ClCompile Include="TestLruPointersCache.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

@@ -26,10 +26,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LruCache1Test.cpp">
+    <ClCompile Include="TestLruCache.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LruPtrCache1Test.cpp">
+    <ClCompile Include="TestLruPointersCache.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

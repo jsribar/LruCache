@@ -2,13 +2,13 @@
 #include "CppUnitTest.h"
 #include <thread>
 
-#include "..\TimedCache\LruCache.h"
+#include "..\LruCache\LruCache.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
 namespace UnitTest
 {
-	TEST_CLASS(LruCache1Test)
+	TEST_CLASS(LruCacheTest)
 	{
 	public:
 		TEST_METHOD(LruCache_ContainsItemMethodReturnsFalseForEmptyCache)
@@ -18,7 +18,7 @@ namespace UnitTest
 			Assert::IsFalse(cache.ContainsItem(9));
 		}
 
-		TEST_METHOD(LruCache_GetItemMethodForObjectThatIsNotInTheCacheAddsItToCache)
+		TEST_METHOD(LruCache_GetItemMethodAddsObjectThatIsNotInTheCache)
 		{
 			auto my_generator = [](const int& a) -> int { return a * a; };
 			LruCache<int, int, decltype(my_generator)> cache{ my_generator, 10 };
@@ -27,14 +27,14 @@ namespace UnitTest
 			Assert::IsTrue(cache.ContainsItem(3));
 		}
 
-		TEST_METHOD(LruCache_GetItemMethodReturnsItsValueIfItemWasNotInCache)
+		TEST_METHOD(LruCache_GetItemMethodReturnsItemValueIfItemWasNotInCache)
 		{
 			auto my_generator = [](const int& a) -> int { return a * a; };
 			LruCache<int, int, decltype(my_generator)> cache{ my_generator, 10 };
 			Assert::AreEqual(my_generator(3), cache.GetItem(3));
 		}
 
-		TEST_METHOD(LruCache_GetItemMethodReturnsItsValueIfItemIsAlreadyInCache)
+		TEST_METHOD(LruCache_GetItemMethodReturnsItemValueIfItemIsAlreadyInCache)
 		{
 			auto my_generator = [](const int& a) -> int { return a * a; };
 			LruCache<int, int, decltype(my_generator)> cache{ my_generator, 10 };
@@ -43,7 +43,7 @@ namespace UnitTest
 			Assert::AreEqual(my_generator(3), cache.GetItem(3));
 		}
 
-		TEST_METHOD(LruCache_GetItemForThreeDifferentObjectsThatAreNotInTheCacheAddsThemToCache)
+		TEST_METHOD(LruCache_GetItemMethodForThreeDifferentObjectsAddsThemToCache)
 		{
 			auto my_generator = [](const int& a) -> int { return a * a; };
 			LruCache<int, int, decltype(my_generator)> cache{ my_generator, 10 };
@@ -55,10 +55,9 @@ namespace UnitTest
 			Assert::IsTrue(cache.ContainsItem(3));
 		}
 
-		TEST_METHOD(LruCache_ContainsItemReturnsFalseForItemStrippedOutOfTheCache)
+		TEST_METHOD(LruCache_ContainsItemMethodReturnsFalseForItemStrippedOutOfTheCache)
 		{
 			auto my_generator = [](const int& a) -> int { return a * a; };
-			size_t timeout = 10;
 			LruCache<int, int, decltype(my_generator)> cache{ my_generator, 3 };
 			cache.GetItem(1);
 			cache.GetItem(2);
@@ -68,10 +67,9 @@ namespace UnitTest
 			Assert::IsFalse(cache.ContainsItem(1));
 		}
 
-		TEST_METHOD(LruCache_ContainsItemReturnsTrueForItemThatHasBeenFetched)
+		TEST_METHOD(LruCache_ContainsItemMethodReturnsTrueForItemThatHasBeenRefetched)
 		{
 			auto my_generator = [](const int& a) -> int { return a * a; };
-			size_t timeout = 10;
 			LruCache<int, int, decltype(my_generator)> cache{ my_generator, 3 };
 			cache.GetItem(1);
 			cache.GetItem(2);
@@ -83,17 +81,36 @@ namespace UnitTest
 			Assert::IsFalse(cache.ContainsItem(2));
 		}
 
-		//TEST_METHOD(LruCache_CleanupMethodRemovesAllItemsThatHaveExpired)
-		//{
-		//	auto my_generator = [](const int& a) -> int { return a * a; };
-		//	size_t timeout = 10;
-		//	LruCache<int, int, decltype(my_generator)> cache{ my_generator, 0, timeout, 20000 };
-		//	cache.GetItem(1);
-		//	cache.GetItem(2);
-		//	std::this_thread::sleep_for(std::chrono::milliseconds(timeout + 1));
-		//	cache.Cleanup(std::chrono::steady_clock::now() - std::chrono::milliseconds(timeout));
-		//	Assert::IsFalse(cache.ContainsItem(1));
-		//	Assert::IsFalse(cache.ContainsItem(2));
-		//}
+		TEST_METHOD(LruCache_ResizeMethodStripsAllExcessiveItemsWhenNewSizeIsSmallerThanNumberOfItems)
+		{
+			auto my_generator = [](const int& a) -> int { return a * a; };
+			LruCache<int, int, decltype(my_generator)> cache{ my_generator, 3 };
+			cache.GetItem(1);
+			cache.GetItem(2);
+			cache.GetItem(3);
+			cache.Resize(1);
+			Assert::IsFalse(cache.ContainsItem(1));
+			Assert::IsFalse(cache.ContainsItem(2));
+			Assert::IsTrue(cache.ContainsItem(3));
+		}
+
+		TEST_METHOD(LruCache_ResizeMethodLeavesAllItemsWhenNewSizeIsLargerThanNumberOfItems)
+		{
+			auto my_generator = [](const int& a) -> int { return a * a; };
+			LruCache<int, int, decltype(my_generator)> cache{ my_generator, 3 };
+			cache.GetItem(1);
+			cache.GetItem(2);
+			cache.GetItem(3);
+			cache.Resize(5);
+			Assert::IsTrue(cache.ContainsItem(1));
+			Assert::IsTrue(cache.ContainsItem(2));
+			Assert::IsTrue(cache.ContainsItem(3));
+
+			cache.GetItem(4);
+			Assert::IsTrue(cache.ContainsItem(4));
+			cache.GetItem(5);
+			Assert::IsTrue(cache.ContainsItem(5));
+		}
+
 	};
 }

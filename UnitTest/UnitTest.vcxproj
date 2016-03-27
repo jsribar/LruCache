@@ -159,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestLruCache.cpp" />
+    <ClCompile Include="TestLruCacheMap.cpp" />
     <ClCompile Include="TestLruPointersCache.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

@@ -1,11 +1,12 @@
 #pragma once
 #include <unordered_map>
+#include <map>
 #include <deque>
 #include <algorithm>
 #include <memory>
 #include <cassert>
 
-template<typename TItem, typename TKey, typename TGenerator, typename TGetItem = const TItem&>
+template<typename TItem, typename TKey, typename TGenerator, typename TGetItem = const TItem&, template <typename TKey, typename... Args> class Items = std::unordered_map>
 class LruCacheBase
 {
 	// item stored in the cache
@@ -30,7 +31,7 @@ class LruCacheBase
 		std::unique_ptr<TItem> m_item;
 	};
 
-	using TItems = std::unordered_map<TKey, Item<TItem>>;
+	using TItems = Items<TKey, Item<TItem>>;
 	using TIterator = typename TItems::iterator;
 	using TKeyIterators = std::deque<TIterator>;
 
@@ -118,3 +119,23 @@ public:
 		: LruCacheBase(generator, capacity)
 	{}
 };
+
+
+template<typename TItem, typename TKey, typename TGenerator>
+class LruCacheMap : public LruCacheBase<TItem, TKey, TGenerator, const TItem&, std::map>
+{
+public:
+	LruCacheMap(TGenerator& generator, size_t capacity)
+		: LruCacheBase(generator, capacity)
+	{}
+};
+
+template<typename TItem, typename TKey, typename TGenerator>
+class LruCacheMap<TItem*, TKey, TGenerator> : public LruCacheBase<TItem*, TKey, TGenerator, TItem*, std::map>
+{
+public:
+	LruCacheMap(TGenerator& generator, size_t capacity)
+		: LruCacheBase(generator, capacity)
+	{}
+};
+

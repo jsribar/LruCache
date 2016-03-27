@@ -79,7 +79,7 @@ int main()
 {
 	std::vector<double> times(12, 100.0);
 
-	for (int i = 0; i < 100; ++i)
+	for (int i = 0; i < 1000; ++i)
 	{
 		int j = 0;
 		double time = TestForIntegerKeyUnorderedMap(100, 100, 10000);

@@ -1,13 +1,15 @@
 #pragma once
 #include <unordered_map>
 #include <map>
-#include <list>
+#include <deque>
 #include <algorithm>
 #include <memory>
 #include <cassert>
 
+// LruCache implementation with key iterators stored in std::deque
+
 template<typename TItem, typename TKey, typename TGenerator, typename TGetItem = const TItem&, template <typename TKey, typename... Args> class Items = std::unordered_map>
-class LruCacheBase
+class LruCacheBaseDeque
 {
 	// item stored in the cache
 	template<typename TItem>
@@ -33,12 +35,12 @@ class LruCacheBase
 
 	using TItems = Items<TKey, Item<TItem>>;
 	using TIterator = typename TItems::iterator;
-	using TKeyIterators = std::list<TIterator>;
+	using TKeyIterators = std::deque<TIterator>;
 
 protected:
 	// generator - functor that creates item for the key value provided
 	// capacity - maximum number of items in the cache
-	LruCacheBase(TGenerator& generator, size_t capacity)
+	LruCacheBaseDeque(TGenerator& generator, size_t capacity)
 		: m_generator(generator)
 		, m_capacity(capacity)
 	{
@@ -98,49 +100,44 @@ private:
 	{
 		auto found = std::find(m_keyIterators.begin(), m_keyIterators.end(), iter);
 		assert(found != m_keyIterators.end());
-		m_keyIterators.splice(m_keyIterators.end(), m_keyIterators, found);
+		std::rotate(found, found + 1, m_keyIterators.end());
 		assert(m_keyIterators.back() == iter);
 	}
 };
 
-// implementation with std::unordered_map
 template<typename TItem, typename TKey, typename TGenerator>
-class LruCache : public LruCacheBase<TItem, TKey, TGenerator>
+class LruCacheDeque : public LruCacheBaseDeque<TItem, TKey, TGenerator>
 {
 public:
-	LruCache(TGenerator& generator, size_t capacity)
-		: LruCacheBase(generator, capacity)
+	LruCacheDeque(TGenerator& generator, size_t capacity)
+		: LruCacheBaseDeque(generator, capacity)
 	{}
 };
 
-// specialization for pointers with std::unordered_map
 template<typename TItem, typename TKey, typename TGenerator>
-class LruCache<TItem*, TKey, TGenerator> : public LruCacheBase<TItem*, TKey, TGenerator, TItem*>
+class LruCacheDeque<TItem*, TKey, TGenerator> : public LruCacheBaseDeque<TItem*, TKey, TGenerator, TItem*>
 {
 public:
-	LruCache(TGenerator& generator, size_t capacity)
-		: LruCacheBase(generator, capacity)
+	LruCacheDeque(TGenerator& generator, size_t capacity)
+		: LruCacheBaseDeque(generator, capacity)
 	{}
 };
 
 
-// implementation with std::map
 template<typename TItem, typename TKey, typename TGenerator>
-class LruCacheMap : public LruCacheBase<TItem, TKey, TGenerator, const TItem&, std::map>
+class LruCacheDequeMap : public LruCacheBaseDeque<TItem, TKey, TGenerator, const TItem&, std::map>
 {
 public:
-	LruCacheMap(TGenerator& generator, size_t capacity)
-		: LruCacheBase(generator, capacity)
+	LruCacheDequeMap(TGenerator& generator, size_t capacity)
+		: LruCacheBaseDeque(generator, capacity)
 	{}
 };
 
-// specialization for pointers with std::map
 template<typename TItem, typename TKey, typename TGenerator>
-class LruCacheMap<TItem*, TKey, TGenerator> : public LruCacheBase<TItem*, TKey, TGenerator, TItem*, std::map>
+class LruCacheDequeMap<TItem*, TKey, TGenerator> : public LruCacheBaseDeque<TItem*, TKey, TGenerator, TItem*, std::map>
 {
 public:
-	LruCacheMap(TGenerator& generator, size_t capacity)
-		: LruCacheBase(generator, capacity)
+	LruCacheDequeMap(TGenerator& generator, size_t capacity)
+		: LruCacheBaseDeque(generator, capacity)
 	{}
 };
-

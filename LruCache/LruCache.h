@@ -35,7 +35,7 @@ class LruCacheBase
 	using TKeyIterators = std::deque<TIterator>;
 
 protected:
-	// generator - functor that creates item pointer for the key value provided
+	// generator - functor that creates item for the key value provided
 	// capacity - maximum number of items in the cache
 	LruCacheBase(TGenerator& generator, size_t capacity)
 		: m_generator(generator)
@@ -58,14 +58,14 @@ public:
 			return found->second.GetItem();
 		}
 		if (m_items.size() >= m_capacity)
-			StripOldest();
-		return AddItem(key);
+			StripLeastRecentlyUsed();
+		return AppendItem(key);
 	}
 
 	void Resize(size_t newSize)
 	{
 		while (m_items.size() > newSize)
-			StripOldest();
+			StripLeastRecentlyUsed();
 		m_capacity = newSize;
 	}
 
@@ -75,7 +75,7 @@ private:
 	TItems m_items;
 	TKeyIterators m_keyIterators;
 
-	TGetItem AddItem(TKey key)
+	TGetItem AppendItem(TKey key)
 	{
 		assert(m_items.find(key) == m_items.end());
 		const auto& iter = m_items.emplace(key, m_generator(key)).first;
@@ -84,7 +84,7 @@ private:
 		return iter->second.GetItem();
 	}
 
-	void StripOldest()
+	void StripLeastRecentlyUsed()
 	{
 		auto iter = m_keyIterators.front();
 		m_items.erase(iter);
@@ -95,7 +95,9 @@ private:
 	void RepositionToQueueEnd(const TIterator& iter)
 	{
 		auto found = std::find(m_keyIterators.begin(), m_keyIterators.end(), iter);
+		assert(found != m_keyIterators.end());
 		std::rotate(found, found + 1, m_keyIterators.end());
+		assert(m_keyIterators.back() == iter);
 	}
 };
 

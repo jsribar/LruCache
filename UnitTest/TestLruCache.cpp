@@ -67,6 +67,26 @@ namespace UnitTest
 			Assert::IsFalse(cache.ContainsItem(1));
 		}
 
+		TEST_METHOD(LruCache_Pointers_ContainsItemMethodReturnsFalseForOldestItemsStrippedOutOfTheCacheSequentially)
+		{
+			auto my_generator = [](const int& a) -> int { return a * a; };
+			LruCache<int, int, decltype(my_generator)> cache{ my_generator, 3 };
+			cache.GetItem(1);
+			cache.GetItem(2);
+			cache.GetItem(3);
+
+			cache.GetItem(4);
+			Assert::IsFalse(cache.ContainsItem(1));
+			Assert::IsTrue(cache.ContainsItem(2));
+
+			cache.GetItem(5);
+			Assert::IsFalse(cache.ContainsItem(1));
+			Assert::IsFalse(cache.ContainsItem(2));
+			Assert::IsTrue(cache.ContainsItem(3));
+			Assert::IsTrue(cache.ContainsItem(4));
+			Assert::IsTrue(cache.ContainsItem(5));
+		}
+
 		TEST_METHOD(LruCache_ContainsItemMethodReturnsTrueForItemThatHasBeenRefetched)
 		{
 			auto my_generator = [](const int& a) -> int { return a * a; };

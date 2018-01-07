@@ -45,9 +45,6 @@
     <ClInclude Include="StopWatch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FontMgr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="FontCache.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -72,9 +69,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="StopWatch.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FontMgr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

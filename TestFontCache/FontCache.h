@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../TimedCache/LruCache.h"
+#include "../LruCache/LruCache.h"
 #include "FontProvider.h"
 #include <afxwin.h>
 
@@ -9,16 +9,6 @@ using _tstring = std::wstring;
 #else
 using _tstring = std::string;
 #endif
-
-//if (lf.lfHeight == pLF->lfHeight)
-//{
-//	if (lf.lfWeight == pLF->lfWeight &&
-//		!_tcscmp(lf.lfFaceName, pLF->lfFaceName) &&
-//		lf.lfEscapement == pLF->lfEscapement &&
-//		lf.lfItalic == pLF->lfItalic &&
-//		lf.lfOrientation == pLF->lfOrientation &&
-//		lf.lfUnderline == pLF->lfUnderline)
-//	{
 
 namespace std
 {
@@ -58,12 +48,17 @@ struct FontGenerator
 class FontCache : public LruCache<CFont*, LOGFONT, FontGenerator>, public FontProvider
 {
 public:
-	FontCache(int cleanupThreshold = 50, size_t maxLifetime = 60000, size_t cleanUpPeriod = 20000) : LruCache<CFont*, LOGFONT, FontGenerator>(FontGenerator(), cleanupThreshold, maxLifetime, cleanUpPeriod)
+	FontCache(int cleanupThreshold = 50) : LruCache<CFont*, LOGFONT, FontGenerator>(FontGenerator(), cleanupThreshold)
 	{
 	}
 
 	CFont* ProvideFont(LOGFONT* lf) override
 	{
 		return GetItem(*lf);
+	}
+
+	void Resize(size_t newSize) override
+	{
+		LruCache<CFont*, LOGFONT, FontGenerator>::Resize(newSize);
 	}
 };

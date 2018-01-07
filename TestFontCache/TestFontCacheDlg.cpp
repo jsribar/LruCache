@@ -9,7 +9,6 @@
 #include "afxdialogex.h"
 #include "RandomFontRequester.h"
 #include "SimpleFontProvider.h"
-#include "FontMgr.h"
 #include "FontEnumerator.h"
 #include "FontCache.h"
 #include "StopWatch.h"
@@ -42,6 +41,7 @@ bool get_pe_name()
 CTestFontCacheDlg::CTestFontCacheDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(IDD_TESTFONTCACHE_DIALOG, pParent)
 	, m_fontProvider(new SimpleFontProvider{})
+	, m_cacheSize(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -55,6 +55,11 @@ void CTestFontCacheDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_FONTS_NUMBER, m_editNumberOfFonts);
 	DDX_Control(pDX, IDC_CHECK_ALLFONTS, m_checkAllFonts);
 	DDX_Control(pDX, IDC_SPIN_FONTS_NUMBER, m_spinFontsNumber);
+	DDX_Control(pDX, IDC_SPIN_CACHE_SIZE, m_spinCacheSize);
+	DDX_Control(pDX, IDC_EDIT_CACHE_SIZE, m_editCacheSize);
+	DDX_Text(pDX, IDC_EDIT_CACHE_SIZE, m_cacheSize);
+	DDX_Control(pDX, IDC_EDIT_TOTAL_FONTS, m_editTotalFonts);
+	DDX_Control(pDX, IDC_SPIN_SPIN_REQUESTS, m_spinRequests);
 }
 
 BEGIN_MESSAGE_MAP(CTestFontCacheDlg, CDialogEx)
@@ -63,6 +68,7 @@ BEGIN_MESSAGE_MAP(CTestFontCacheDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_RUN, &CTestFontCacheDlg::OnBnClickedButtonRun)
 	ON_BN_CLICKED(IDC_CHECK_ALLFONTS, &CTestFontCacheDlg::OnBnClickedCheckAllfonts)
 	ON_CONTROL_RANGE(BN_CLICKED, IDC_RADIO_NOCACHE, IDC_RADIO_UNORDERED_MAP, &CTestFontCacheDlg::OnCacheTypeChanged)
+	ON_EN_CHANGE(IDC_EDIT_CACHE_SIZE, &CTestFontCacheDlg::OnEnChangeEditCacheSize)
 END_MESSAGE_MAP()
 
 
@@ -82,9 +88,15 @@ BOOL CTestFontCacheDlg::OnInitDialog()
 	m_allFontNames = fe.GetFontNames();
 
 	m_editRequestsNumber.SetWindowText(_T("1000"));
-	m_buttonNone.SetCheck(BST_CHECKED);
+	m_spinRequests.SetRange32(1, 10000);
+	CString numberOfFonts;
+	numberOfFonts.Format(_T("(%d)"), m_allFontNames.size());
+	m_editTotalFonts.SetWindowText(numberOfFonts);
 	m_editNumberOfFonts.SetWindowText(_T("5"));
 	m_spinFontsNumber.SetRange32(1, m_allFontNames.size());
+	m_editCacheSize.SetWindowText(_T("20"));
+	m_spinCacheSize.SetRange32(1, m_allFontNames.size());
+	m_buttonNone.SetCheck(BST_CHECKED);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -147,7 +159,6 @@ void CTestFontCacheDlg::OnBnClickedButtonRun()
 	RandomFontRequester rfr(selectedFonts, m_fontProvider.get());
 
 	Stopwatch sw;
-	_T(R"(hello)");
 	rfr.RequestFonts(numberOfRequests, seed);
 
 	auto time = sw.Stop();
@@ -166,15 +177,25 @@ void CTestFontCacheDlg::OnCacheTypeChanged(UINT nID)
 	{
 	case IDC_RADIO_NOCACHE:
 		m_fontProvider.reset(new SimpleFontProvider{});
-		break;
-	case IDC_RADIO_FONTMGR:
-		m_fontProvider.reset(new FontMgr{});
+		m_editCacheSize.EnableWindow(FALSE);
+		m_spinCacheSize.EnableWindow(FALSE);
 		break;
 	case IDC_RADIO_UNORDERED_MAP:
-		m_fontProvider.reset(new FontCache{ 20, 60000 });
+		m_fontProvider.reset(new FontCache(m_cacheSize));
+		m_editCacheSize.EnableWindow(TRUE);
+		m_spinCacheSize.EnableWindow(TRUE);
 		break;
 	default:
 		ASSERT(FALSE);
 		break;
+	}
+}
+
+void CTestFontCacheDlg::OnEnChangeEditCacheSize()
+{
+	if (m_editCacheSize.GetSafeHwnd())
+	{
+		UpdateData();
+		m_fontProvider->Resize(m_cacheSize);
 	}
 }

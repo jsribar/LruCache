@@ -36,15 +36,21 @@ protected:
 	afx_msg void OnBnClickedButtonRun();
 	afx_msg void OnBnClickedCheckAllfonts();
 	afx_msg void OnCacheTypeChanged(UINT);
+	afx_msg void OnEnChangeEditCacheSize();
 	DECLARE_MESSAGE_MAP()
 private:
 	CEdit m_editRequestsNumber;
+	CSpinButtonCtrl m_spinRequests;
 	CEdit m_editTime;
 	CButton m_buttonNone;
-	CEdit m_editNumberOfFonts;
 	CButton m_checkAllFonts;
+	CEdit m_editTotalFonts;
+	CEdit m_editNumberOfFonts;
+	CSpinButtonCtrl m_spinFontsNumber;
+	CEdit m_editCacheSize;
+	CSpinButtonCtrl m_spinCacheSize;
 
 	std::vector<CString> m_allFontNames;
-	CSpinButtonCtrl m_spinFontsNumber;
 	std::unique_ptr<FontProvider> m_fontProvider;
+	long m_cacheSize{ 20 };
 };
